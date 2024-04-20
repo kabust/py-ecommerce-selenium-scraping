@@ -13,6 +13,8 @@ from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 
+from tqdm import tqdm
+
 
 BASE_URL = "https://webscraper.io/"
 HOME_URL = urljoin(BASE_URL, "test-sites/e-commerce/more/")
@@ -113,11 +115,18 @@ def write_to_csv(filename: str, products: [Product]) -> None:
 def get_all_products(driver: WebDriver = webdriver.Chrome()) -> None:
     urls = get_sidebar_urls(HOME_URL, driver)
 
-    for tab_name, url in urls:
+    for tab_name, url in tqdm(urls):
         page = scrape_page(url, driver)
         write_to_csv(f"{tab_name}.csv", page)
 
 
 if __name__ == "__main__":
-    chrome_driver = webdriver.Chrome()
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless=new")
+    chrome_driver = webdriver.Chrome(options=options)
+
+    print("Running selenium scraper...")
     get_all_products(chrome_driver)
+    print("Done!")
+
+    chrome_driver.quit()
