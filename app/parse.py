@@ -52,7 +52,7 @@ def scrape_single_product(product: WebElement) -> Product:
     )
 
 
-def scrape_page(url: str, driver: WebDriver) -> [Product]:
+def scrape_page(url: str, driver: WebDriver) -> list[Product]:
     driver.get(url)
 
     try:
@@ -83,14 +83,14 @@ def scrape_page(url: str, driver: WebDriver) -> [Product]:
     return [scrape_single_product(product) for product in products]
 
 
-def get_urls(class_name: str, driver: WebDriver) -> [tuple]:
+def get_urls(class_name: str, driver: WebDriver) -> list[tuple]:
     return [
         (elem.text.lower(), elem.get_attribute("href"))
         for elem in driver.find_elements(By.CLASS_NAME, class_name)
     ]
 
 
-def get_sidebar_urls(home_url: str, driver: WebDriver) -> [str]:
+def get_sidebar_urls(home_url: str, driver: WebDriver) -> list[tuple | tuple[str, str]]:
     driver.get(home_url)
     categories = get_urls("category-link", driver)
 
@@ -102,7 +102,7 @@ def get_sidebar_urls(home_url: str, driver: WebDriver) -> [str]:
     return [("home", home_url)] + categories + subcategories
 
 
-def write_to_csv(filename: str, products: [Product]) -> None:
+def write_to_csv(filename: str, products: list[Product]) -> None:
     with open(filename, "w", newline="") as csvfile:
         fields = ("title", "description", "price", "rating", "num_of_reviews")
         writer = csv.DictWriter(csvfile, fieldnames=fields)
@@ -112,21 +112,21 @@ def write_to_csv(filename: str, products: [Product]) -> None:
             writer.writerow(asdict(product))
 
 
-def get_all_products(driver: WebDriver = webdriver.Chrome()) -> None:
+def get_all_products() -> None:
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless=new")
+    driver = webdriver.Chrome(options=options)
+
     urls = get_sidebar_urls(HOME_URL, driver)
 
     for tab_name, url in tqdm(urls):
         page = scrape_page(url, driver)
         write_to_csv(f"{tab_name}.csv", page)
 
+    driver.quit()
+
 
 if __name__ == "__main__":
-    options = webdriver.ChromeOptions()
-    options.add_argument("--headless=new")
-    chrome_driver = webdriver.Chrome(options=options)
-
     print("Running selenium scraper...")
-    get_all_products(chrome_driver)
+    get_all_products()
     print("Done!")
-
-    chrome_driver.quit()
